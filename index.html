@@ -1,286 +1,299 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LLM Performance Dashboard</title>
+  <title>LLM Performance Dashboard (Static JS)</title>
+  
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
   <style>
     body {
       font-family: 'Inter', sans-serif;
     }
     .modal-bg {
-      background-color: rgba(0,0,0,0.6);
+      background-color: rgba(75, 85, 99, 0.75); /* bg-gray-600 opacity 0.75 */
     }
-    .modal-content {
-      max-height: 70vh;
-      overflow-y: auto;
-      white-space: pre-wrap;
+    /* Fade in modal animation */
+    @keyframes fadeInScaleUp {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .animate-fade-in-up {
+      animation: fadeInScaleUp 0.3s ease-out forwards;
     }
   </style>
 </head>
-<body class="bg-gray-100">
-  <div id="root"></div>
+<body class="bg-gray-100 p-4">
 
-  <script type="text/babel">
-    const { useState } = React;
+  <div class="max-w-7xl mx-auto bg-white shadow-lg rounded-xl p-6 md:p-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center md:text-left">
+      LLM Performance Dashboard
+    </h1>
 
-    const App = () => {
-      const [results, setResults] = useState([
-        {
-          id: 1,
-          model: 'LLAMA 3.3',
-          prompt: 'You are a clinical assistant analyzing peritoneal dialysis data...',
-          output: '### 1. Patient Summary\nThe patient is identified by the ID "85h49272ha"...',
-          issue: `1. UF values are wrong\n2. Anomaly detection failed\n3. Misleading summary\n4. Incorrect table`
-        }
-      ]);
+    <div class="mb-4 flex justify-end">
+      <button id="showAddFormBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+        + Add New Entry
+      </button>
+    </div>
 
-      const [showModal, setShowModal] = useState(false);
-      const [modalTitle, setModalTitle] = useState('');
-      const [modalContent, setModalContent] = useState('');
-      const [showForm, setShowForm] = useState(false);
-      const [newEntry, setNewEntry] = useState({
-        model: '',
-        prompt: '',
-        output: '',
-        issue: ''
+    <!-- Add Entry Form (hidden initially) -->
+    <div id="addFormContainer" class="mb-6 p-4 bg-gray-50 rounded-lg shadow-md hidden">
+      <h2 class="text-xl font-semibold mb-3">Add New Model Entry</h2>
+      <form id="addEntryForm" class="space-y-4">
+        <div>
+          <label class="block text-gray-700 font-medium mb-1" for="modelInput">Model</label>
+          <input id="modelInput" type="text" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-gray-700 font-medium mb-1" for="promptInput">Prompt</label>
+          <textarea id="promptInput" rows="3" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+        <div>
+          <label class="block text-gray-700 font-medium mb-1" for="outputInput">Output</label>
+          <textarea id="outputInput" rows="2" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+        <div>
+          <label class="block text-gray-700 font-medium mb-1" for="issueInput">Issue</label>
+          <textarea id="issueInput" rows="2" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+        <div class="flex space-x-4">
+          <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+            Save Entry
+          </button>
+          <button type="button" id="cancelAddBtn" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="overflow-x-auto rounded-lg shadow-md">
+      <table class="min-w-full divide-y divide-gray-200" id="resultsTable">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider md:px-6">Model</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider md:px-6">Prompt</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider md:px-6">Output</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider md:px-6">Issue</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200" id="resultsBody">
+          <!-- Rows will be inserted here by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 hidden items-center justify-center p-4 z-50 modal-bg">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg md:max-w-2xl lg:max-w-3xl animate-fade-in-up overflow-hidden">
+      <div class="flex justify-between items-center bg-blue-600 text-white p-4 rounded-t-xl">
+        <h3 id="modalTitle" class="text-xl font-semibold"></h3>
+        <button id="modalCloseBtn" class="text-white hover:text-gray-200 text-2xl font-bold">&times;</button>
+      </div>
+      <div class="p-4 max-h-[70vh] overflow-y-auto">
+        <pre id="modalContent" class="whitespace-pre-wrap text-gray-800"></pre>
+      </div>
+      <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end rounded-b-xl">
+        <button id="modalCloseBtnFooter" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  (function(){
+    // Sample data, same as your original
+    let results = [
+      {
+        id: 1,
+        model: 'gemini-2.0-flash',
+        prompt: `You are a clinical assistant analyzing peritoneal dialysis data for a patient.
+Given the patient information and daily dialysis data including drain volumes in milliliters (an array of numbers per day), weight in kilograms, and blood pressure readings (systolic/diastolic), please:
+1.  For each day, *sum the drain volumes to calculate the total ultrafiltration (UF) in liters*, rounding to two decimal places (e.g., 850 mL = 0.85 L).
+
+2.  Extract the patient's weight and blood pressure for the same dates.
+
+3.  Generate a clinical report with the following sections:
+
+*   *Patient Summary* (basic demographics, dialysis type, bag info, EPO injection, race, religion, hospital distance)
+
+*   *Data Table* listing each date with: UF in liters, weight (kg), blood pressure (Systolic/Diastolic mmHg)
+
+*   *Top 3 Anomalies* based on:
+
+    *   UF values higher than the average plus 1 standard deviation
+
+    *   Weight changes greater than 0.5 kg compared to previous day
+
+    *   Blood pressure above 140/90 mmHg
+
+*   *Recommendations* for UF, weight, and blood pressure management
+
+*   *Next Steps* including lab tests, monitoring, consults, and follow-ups
+
+Present the report in clear, professional clinical language without code or raw data tables. Use full sentences and bullet points where appropriate.
+Ensure all UF calculations are accurate, based solely on summing daily drain volumes converted to liters with two decimals.  
+  
+this is the JSON:  
+  
+{ "Patient_ID": "85h49272ha", "Gender": "Male", "Age": 23, "Dialysis_Type": "Peritoneal Dialysis", "Solution_Provider": "Baxter", "Bag_Concentration": { "Bag 1": "1.5%", "Bag 2": "1.5%", "Bag 3": "1.5%" }, "Bag_Volume": "5.5 Litres", "EPO_Injection": "Procrit (3x per month)", "Race": "Malay", "Religion": "Islam", "Distance_from_hospital": "12.3KM", "UF_Reading_Data": [ { "Date": "23 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" } ] }, { "Date": "22 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 250, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "21 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 310, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 290, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 270, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "20 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 270, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "19 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 290, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "18 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "17 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 260, "Concentration_%": 1.5, "Condition": "Clear" } ] } ] }`,
+        output: `Clinical report for the patient:
+  
+- Patient summary: Male, 23, Peritoneal Dialysis, Solution Provider Baxter, Bags 1.5% concentration, Volume 5.5 L, EPO injections 3x per month, Malay, Islamic, 12.3KM from hospital.
+  
+- Data Table: Summarizing dates with UF in liters, weight, and blood pressure is required.
+  
+- Top 3 anomalies: UF > mean + 1 SD, Weight changes > 0.5 kg, BP > 140/90 mmHg.
+  
+- Recommendations and next steps.
+  
+(Note: The output is a placeholder, the detailed report will be generated by the model.)`,
+        issue: "Some slight inconsistencies in UF calculation observed."
+      },
+      {
+        id: 2,
+        model: 'gemini-1.0-base',
+        prompt: 'Write a story about a cat who wants to explore the world.',
+        output: 'Once upon a time, a curious cat named Whiskers set out on a grand adventure...',
+        issue: 'No issues.'
+      },
+      {
+        id: 3,
+        model: 'gpt-4o-mini',
+        prompt: 'Explain quantum entanglement in simple terms.',
+        output: 'Quantum entanglement occurs when two particles become linked so that the state of one instantly influences the state of the other, regardless of distance.',
+        issue: 'Output is accurate and clear.'
+      }
+    ];
+
+    // DOM elements
+    const resultsBody = document.getElementById('resultsBody');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const modalCloseBtnFooter = document.getElementById('modalCloseBtnFooter');
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const addFormContainer = document.getElementById('addFormContainer');
+    const addEntryForm = document.getElementById('addEntryForm');
+    const cancelAddBtn = document.getElementById('cancelAddBtn');
+
+    // Render table rows
+    function renderTable() {
+      resultsBody.innerHTML = '';
+      results.forEach(entry => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50 cursor-pointer';
+        tr.innerHTML = `
+          <td class="px-4 py-3 md:px-6 text-gray-900 font-medium">${escapeHtml(entry.model)}</td>
+          <td class="px-4 py-3 md:px-6 max-w-xs truncate" title="${escapeHtml(entry.prompt)}">${escapeHtml(entry.prompt)}</td>
+          <td class="px-4 py-3 md:px-6 max-w-xs truncate" title="${escapeHtml(entry.output)}">${escapeHtml(entry.output)}</td>
+          <td class="px-4 py-3 md:px-6 max-w-xs truncate" title="${escapeHtml(entry.issue)}">${escapeHtml(entry.issue)}</td>
+        `;
+        tr.addEventListener('click', () => {
+          showModal(entry);
+        });
+        resultsBody.appendChild(tr);
       });
+    }
 
-      // Open modal with title & content
-      const openModal = (title, content) => {
-        setModalTitle(title);
-        setModalContent(content);
-        setShowModal(true);
-      };
-      const closeModal = () => setShowModal(false);
+    // Show modal with full details
+    function showModal(entry) {
+      modalTitle.textContent = `Details for Model: ${entry.model}`;
+      modalContent.textContent =
+        `Prompt:\n${entry.prompt}\n\nOutput:\n${entry.output}\n\nIssue:\n${entry.issue}`;
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden'; // prevent background scroll
+    }
 
-      // Truncate text for table cells
-      const truncateText = (text, len) => {
-        if (!text) return '';
-        return text.length <= len ? text : text.slice(0, len) + '...';
-      };
+    // Close modal
+    function closeModal() {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
 
-      // Handle form field changes
-      const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setNewEntry(prev => ({ ...prev, [name]: value }));
-      };
+    // Escape HTML to prevent injection
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[m];
+      });
+    }
 
-      // Submit form: add new entry
-      const handleFormSubmit = (e) => {
-        e.preventDefault();
-        const newId = results.length ? Math.max(...results.map(r => r.id)) + 1 : 1;
-        setResults([...results, { id: newId, ...newEntry }]);
-        setNewEntry({ model: '', prompt: '', output: '', issue: '' });
-        setShowForm(false);
-        alert('Entry added! Click "Get Updated HTML" to copy the full updated code.');
-      };
+    // Show add entry form
+    showAddFormBtn.addEventListener('click', () => {
+      addFormContainer.classList.remove('hidden');
+      showAddFormBtn.disabled = true;
+      addEntryForm.reset();
+    });
 
-      // Generate full HTML code with current data embedded
-      const generateHTMLCode = () => {
-        // Escape double quotes and backslashes in text fields for safety
-        const escapeJSString = (str) =>
-          str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+    // Cancel add entry
+    cancelAddBtn.addEventListener('click', () => {
+      addFormContainer.classList.add('hidden');
+      showAddFormBtn.disabled = false;
+    });
 
-        const resultsJS = results.map(r => ({
-          id: r.id,
-          model: escapeJSString(r.model),
-          prompt: escapeJSString(r.prompt),
-          output: escapeJSString(r.output),
-          issue: escapeJSString(r.issue),
-        }));
+    // Handle form submit
+    addEntryForm.addEventListener('submit', e => {
+      e.preventDefault();
 
-        return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LLM Performance Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>body { font-family: 'Inter', sans-serif; }</style>
-</head>
-<body class="bg-gray-100">
-  <div id="root"></div>
-  <script type="text/babel">
-    const { useState } = React;
-    const App = () => {
-      const [results] = useState(${JSON.stringify(resultsJS, null, 2)});
-      const truncateText = (text, len) => (text.length <= len ? text : text.slice(0, len) + '...');
-      return (
-        <div className="min-h-screen p-6 bg-gray-100">
-          <div className="max-w-6xl mx-auto bg-white shadow-lg rounded p-6">
-            <h1 className="text-3xl font-bold mb-6">LLM Performance Dashboard</h1>
-            <table className="w-full table-auto border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 px-4 py-2">Model</th>
-                  <th className="border border-gray-300 px-4 py-2">Prompt</th>
-                  <th className="border border-gray-300 px-4 py-2">Output</th>
-                  <th className="border border-gray-300 px-4 py-2">Issue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map(r => (
-                  <tr key={r.id} className="hover:bg-gray-100">
-                    <td className="border border-gray-300 px-4 py-2">{truncateText(r.model, 30)}</td>
-                    <td className="border border-gray-300 px-4 py-2">{truncateText(r.prompt, 40)}</td>
-                    <td className="border border-gray-300 px-4 py-2">{truncateText(r.output, 40)}</td>
-                    <td className="border border-gray-300 px-4 py-2">{truncateText(r.issue, 40)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="mt-4 text-gray-600 text-sm italic">This is a static snapshot of the saved entries.</p>
-          </div>
-        </div>
-      );
-    };
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  <\/script>
-</body>
-</html>`;
+      const newEntry = {
+        id: Date.now(),
+        model: addEntryForm.modelInput.value.trim(),
+        prompt: addEntryForm.promptInput.value.trim(),
+        output: addEntryForm.outputInput.value.trim(),
+        issue: addEntryForm.issueInput.value.trim()
       };
 
-      return (
-        <div className="min-h-screen bg-gray-100 p-6">
-          <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-4xl font-extrabold text-gray-900">LLM Performance Dashboard</h1>
-              <div className="space-x-2">
-                <button
-                  onClick={() => setShowForm(!showForm)}
-                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  {showForm ? 'Close Form' : 'New Entry'}
-                </button>
-                <button
-                  onClick={() => openModal('Full Updated HTML Code', generateHTMLCode())}
-                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-                >
-                  Get Updated HTML
-                </button>
-              </div>
-            </div>
+      if (!newEntry.model || !newEntry.prompt || !newEntry.output || !newEntry.issue) {
+        alert('Please fill all fields.');
+        return;
+      }
 
-            {showForm && (
-              <form
-                onSubmit={handleFormSubmit}
-                className="mb-8 bg-gray-50 rounded p-6 shadow-md space-y-4"
-              >
-                <input
-                  type="text"
-                  name="model"
-                  value={newEntry.model}
-                  onChange={handleInputChange}
-                  placeholder="Model"
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-300"
-                  required
-                />
-                <textarea
-                  name="prompt"
-                  value={newEntry.prompt}
-                  onChange={handleInputChange}
-                  placeholder="Prompt"
-                  rows={3}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-300"
-                  required
-                />
-                <textarea
-                  name="output"
-                  value={newEntry.output}
-                  onChange={handleInputChange}
-                  placeholder="Output"
-                  rows={3}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-300"
-                  required
-                />
-                <textarea
-                  name="issue"
-                  value={newEntry.issue}
-                  onChange={handleInputChange}
-                  placeholder="Issue"
-                  rows={3}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-300"
-                  required
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Add Entry
-                </button>
-              </form>
-            )}
+      results.push(newEntry);
+      renderTable();
+      addFormContainer.classList.add('hidden');
+      showAddFormBtn.disabled = false;
+    });
 
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 px-4 py-2 text-left">Model</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Prompt</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Output</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Issue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map(({ id, model, prompt, output, issue }) => (
-                  <tr key={id} className="hover:bg-gray-100">
-                    <td className="border border-gray-300 px-4 py-2">{truncateText(model, 30)}</td>
-                    <td className="border border-gray-300 px-4 py-2">{truncateText(prompt, 40)}</td>
-                    <td className="border border-gray-300 px-4 py-2">{truncateText(output, 40)}</td>
-                    <td className="border border-gray-300 px-4 py-2">{truncateText(issue, 40)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+    // Modal close buttons
+    modalCloseBtn.addEventListener('click', closeModal);
+    modalCloseBtnFooter.addEventListener('click', closeModal);
 
-          {showModal && (
-            <div
-              className="modal-bg fixed inset-0 flex items-center justify-center z-50 p-4"
-              onClick={closeModal}
-              role="dialog"
-              aria-modal="true"
-            >
-              <div
-                className="bg-white rounded-lg shadow-lg max-w-5xl w-full p-6 relative"
-                onClick={e => e.stopPropagation()}
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold">{modalTitle}</h2>
-                  <button
-                    onClick={closeModal}
-                    className="text-gray-500 hover:text-gray-900 text-3xl font-bold leading-none"
-                    aria-label="Close modal"
-                  >
-                    &times;
-                  </button>
-                </div>
-                <pre className="modal-content whitespace-pre-wrap text-sm text-gray-800">{modalContent}</pre>
-                <div className="mt-4 text-right">
-                  <button
-                    onClick={closeModal}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    };
+    // Close modal on clicking outside content
+    modal.addEventListener('click', e => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+    // Initial render
+    renderTable();
+  })();
+</script>
+
 </body>
 </html>
