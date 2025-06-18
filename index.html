@@ -36,7 +36,36 @@
         {
           id: 1,
           model: 'gemini-2.0-flash',
-          prompt: 'Summarize the latest research on personalized medicine for kidney disease patients...',
+          prompt: 'You are a clinical assistant analyzing peritoneal dialysis data for a patient.
+Given the patient information and daily dialysis data including drain volumes in milliliters (an array of numbers per day), weight in kilograms, and blood pressure readings (systolic/diastolic), please:
+1.  For each day, *sum the drain volumes to calculate the total ultrafiltration (UF) in liters*, rounding to two decimal places (e.g., 850 mL = 0.85 L).
+    
+2.  Extract the patient's weight and blood pressure for the same dates.
+    
+3.  Generate a clinical report with the following sections:
+    
+*   *Patient Summary* (basic demographics, dialysis type, bag info, EPO injection, race, religion, hospital distance)
+    
+*   *Data Table* listing each date with: UF in liters, weight (kg), blood pressure (Systolic/Diastolic mmHg)
+    
+*   *Top 3 Anomalies* based on:
+    
+    *   UF values higher than the average plus 1 standard deviation
+        
+    *   Weight changes greater than 0.5 kg compared to previous day
+        
+    *   Blood pressure above 140/90 mmHg
+        
+*   *Recommendations* for UF, weight, and blood pressure management
+    
+*   *Next Steps* including lab tests, monitoring, consults, and follow-ups
+    
+Present the report in clear, professional clinical language without code or raw data tables. Use full sentences and bullet points where appropriate.
+Ensure all UF calculations are accurate, based solely on summing daily drain volumes converted to liters with two decimals.  
+  
+this is the JSON:  
+  
+{ "Patient_ID": "85h49272ha", "Gender": "Male", "Age": 23, "Dialysis_Type": "Peritoneal Dialysis", "Solution_Provider": "Baxter", "Bag_Concentration": { "Bag 1": "1.5%", "Bag 2": "1.5%", "Bag 3": "1.5%" }, "Bag_Volume": "5.5 Litres", "EPO_Injection": "Procrit (3x per month)", "Race": "Malay", "Religion": "Islam", "Distance_from_hospital": "12.3KM", "UF_Reading_Data": [ { "Date": "23 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" } ] }, { "Date": "22 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 250, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "21 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 310, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 290, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 270, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "20 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 270, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "19 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 290, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "18 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "17 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" } ] } ], "Blood_Pressure_Data": [ { "Date": "23 May 2025", "Time": "08:05", "Systolic_mmHg": 135, "Diastolic_mmHg": 75 }, { "Date": "22 May 2025", "Time": "08:05", "Systolic_mmHg": 142, "Diastolic_mmHg": 80 }, { "Date": "21 May 2025", "Time": "08:05", "Systolic_mmHg": 138, "Diastolic_mmHg": 77 }, { "Date": "20 May 2025", "Time": "08:05", "Systolic_mmHg": 135, "Diastolic_mmHg": 81 }, { "Date": "19 May 2025", "Time": "08:05", "Systolic_mmHg": 147, "Diastolic_mmHg": 80 }, { "Date": "18 May 2025", "Time": "08:05", "Systolic_mmHg": 130, "Diastolic_mmHg": 78 }, { "Date": "17 May 2025", "Time": "08:05", "Systolic_mmHg": 130, "Diastolic_mmHg": 75 } ], "Weight_Data": [ { "Date": "23 May 2025", "Pre_drain_Weight_kg": 70 }, { "Date": "22 May 2025", "Pre_drain_Weight_kg": 69.5 }, { "Date": "21 May 2025", "Pre_drain_Weight_kg": 70.2 }, { "Date": "20 May 2025", "Pre_drain_Weight_kg": 69.8 }, { "Date": "19 May 2025", "Pre_drain_Weight_kg": 70.2 }, { "Date": "18 May 2025", "Pre_drain_Weight_kg": 69.5 }, { "Date": "17 May 2025", "Pre_drain_Weight_kg": 70.2 } ] }',
           output: 'Personalized medicine for kidney disease is advancing with breakthroughs...',
           issue: 'The summary omitted key ethical considerations regarding data privacy in genetic research.',
         },
