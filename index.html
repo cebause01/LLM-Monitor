@@ -1,299 +1,811 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LLM Performance Dashboard (Static JS)</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
-  
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-    .modal-bg {
-      background-color: rgba(75, 85, 99, 0.75); /* bg-gray-600 opacity 0.75 */
-    }
-    /* Fade in modal animation */
-    @keyframes fadeInScaleUp {
-      from {
-        opacity: 0;
-        transform: scale(0.95);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-    .animate-fade-in-up {
-      animation: fadeInScaleUp 0.3s ease-out forwards;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LLM Performance Review (Hardcoded)</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .cell-preview {
+            position: relative;
+            max-height: 7rem;
+            overflow: hidden;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .cell-preview::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2.5rem;
+            background: linear-gradient(to bottom, transparent, #ffffff);
+        }
+
+        tr:hover .cell-preview::after {
+            background: linear-gradient(to bottom, transparent, #f9fafb);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-content {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+
+        /* Ensure modal content is scrollable and shows full content */
+        #modal-prompt, #modal-output, #modal-issue {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 p-4">
 
-  <div class="max-w-7xl mx-auto bg-white shadow-lg rounded-xl p-6 md:p-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center md:text-left">
-      LLM Performance Dashboard
-    </h1>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-800">LLM Performance Review</h1>
+            <p class="mt-2 text-lg text-gray-500">Click on a row to view full details.</p>
+        </header>
 
-    <div class="mb-4 flex justify-end">
-      <button id="showAddFormBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-        + Add New Entry
-      </button>
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="w-1/6 px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Model</th>
+                            <th scope="col" class="w-1/4 px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Prompt</th>
+                            <th scope="col" class="w-1/4 px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Output</th>
+                            <th scope="col" class="w-1/3 px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Issue Analysis</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body" class="bg-white divide-y divide-gray-200">
+                        <!-- LLAMA 3.3 :70B Row -->
+                        <tr class="hover:bg-gray-50 cursor-pointer transition-colors duration-150" 
+                            data-model="LLAMA 3.3 :70B" 
+                            data-prompt="You are a clinical data assistant. You will receive a JSON object containing patient demographics and treatment details, daily peritoneal dialysis drain volumes in milliliters (an array per day), pre-drain weight in kilograms for each date, and blood pressure readings (systolic/diastolic mmHg) for each date.
+
+Your tasks are as follows:
+
+Compute daily ultrafiltration (UF): sum each day's drain volumes, convert the total to liters, and round to two decimal places.
+
+Extract vital signs: retrieve the pre-drain weight and the corresponding blood pressure for each date.
+
+Detect anomalies:
+
+Calculate the mean and standard deviation of daily UF; flag any date where UF exceeds mean + 1 SD.
+
+Identify dates with weight changes greater than 0.5 kg compared to the previous day.
+
+Identify dates with a systolic reading > 140 mmHg or a diastolic reading > 90 mmHg.
+
+Assemble a clinical report with these sections:
+
+Patient Summary: demographics, dialysis type, solution and concentration, bag volume, EPO regimen, race, religion, and distance to hospital.
+
+Data Table: each date with UF (L), weight (kg), and blood pressure (mmHg).
+
+Top 3 Anomalies: one key finding each for UF, weight, and blood pressure.
+
+Recommendations: clear, actionable guidance for managing UF, weight, and blood pressure.
+
+Next Steps: suggested laboratory tests, a monitoring plan, specialist consults, and follow-up scheduling.
+
+Requirements:
+
+Do not invent or overwrite any JSON values; if you spot inconsistencies, call them out explicitly.
+
+Present your report in clear, professional clinical language, using full sentences and bullet points rather than code blocks or raw data dumps.
+
+Ensure every UF calculation is strictly derived from the provided JSON data."
+                            data-output="1. Patient Summary
+The patient, identified by the ID '85h49272ha', is a 23-year-old male. He is undergoing peritoneal dialysis with 1.5% bag concentration and 5.5 liters volume, provided by Baxter. His EPO injections are administered three times a month using Procrit. The patient is of Malay race, follows Islam, and lives 12.3 kilometers away from the hospital.
+
+### 2. Data Table
+Below is a table summarizing the patient's ultrafiltration, weight, and blood pressure data from most recent to oldest:
+
+| Date        | Ultrafiltration (L) | Weight (kg) | Blood Pressure (mmHg) |
+|-------------|---------------------|-------------|-----------------------|
+| 23 May 2025 | 0.90                 | 70           | 135/75                 |
+| 22 May 2025 | 0.85                 | 69.5         | 142/80                 |
+| 21 May 2025 | 0.89                 | 70.2         | 138/77                 |
+| 20 May 2025 | 0.84                 | 69.8         | 135/81                 |
+| 19 May 2025 | 0.84                 | 70.2         | 147/80                 |
+| 18 May 2025 | 0.75                 | 69.5         | 130/78                 |
+| 17 May 2025 | 0.80                 | 70.2         | 130/75                 |
+
+### 3. Top 3 Anomalies
+Notable anomalies include:
+- On 19 May 2025, the blood pressure reading was 147/80 mmHg, which is slightly above the threshold of 140/90 mmHg.
+- The weight change from 18 May 2025 to 19 May 2025 showed a slight increase to 70.2 kg, which is within a manageable range but warrants monitoring.
+- There were no significant ultrafiltration anomalies outside the mean + 1 standard deviation range, but the patient's UF rates are generally stable and within a healthy range.
+
+### 4. Recommendations
+Based on the data, the patient's ultrafiltration rates are generally stable, which is beneficial for fluid management. However, the slight variability in weight and the occasional blood pressure reading above 140/90 mmHg require close monitoring. Recommendations include maintaining the current dialysis regimen but closely monitoring weight and blood pressure to prevent fluid retention and hypertension.
+
+### 5. Next Steps
+- Monitor the patient's weight and blood pressure closely over the next few weeks to ensure stability and make adjustments as necessary.
+- Consider performing additional lab investigations, such as Kt/V and albumin levels, to assess the efficacy of the dialysis treatment and the patient's nutritional status.
+- Schedule a follow-up consultation to review the patient's progress, adjust the dialysis regimen if needed, and discuss any concerns or changes in symptoms."
+                            data-issue="Here's exactly where LLAMA 3.3 went off the rails:
+
+1. *Data Table UF values are incorrect for 21 and 20 May*
+
+* *21 May:* 310 + 290 + 270 = 870 mL ⇒ *0.87 L*, not 0.89 L
+* *20 May:* 300 + 300 + 270 = 870 mL ⇒ *0.87 L*, not 0.84 L
+
+2. *Ultrafiltration anomaly was missed*
+
+* Mean UF ≈ 0.84 L, SD ≈ 0.047 L ⇒ threshold ≈ 0.89 L.
+* *23 May (0.90 L)* exceeds that threshold and must be flagged—LLAMA reported 'no UF anomalies.'
+
+3. *Weight-change anomalies were under-reported*
+
+* Changes > 0.5 kg actually occur on:
+    * *17→18 May:* 70.2 → 69.5 kg (−0.7 kg)
+    * *18→19 May:* 69.5 → 70.2 kg (+0.7 kg)
+    * *21→22 May:* 70.2 → 69.5 kg (−0.7 kg)
+* LLAMA only noted the 18→19 swing.
+
+4. *Blood pressure anomaly on 22 May was omitted*
+
+* Both *19 May (147/80)* and *22 May (142/80)* exceed systolic > 140 mmHg. LLAMA only flagged 19 May.
+
+5. *'Generally stable' interpretations are misleading*
+
+* Because its UF numbers were wrong, LLAMA downplayed the true UF outlier.
+* It also minimized genuine weight and BP excursions by mis-identifying dates.
+
+---
+
+*To correct:*
+
+* Fix 21 May and 20 May UF to 0.87 L.
+* Flag 23 May as the UF > mean+1 SD anomaly.
+* List all three > 0.5 kg weight swings (17→18, 18→19, 21→22 May).
+* Include 22 May in your blood-pressure anomalies.
+* Re-generate your clinical report from these accurate values.">
+                            <td class="px-6 py-4 text-sm font-semibold text-gray-800 align-top">LLAMA 3.3 :70B</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">You are a clinical data assistant. You will receive a JSON object containing patient demographics and treatment details...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">1. Patient Summary The patient, identified by the ID "85h49272ha", is a 23-year-old male...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">Here's exactly where LLAMA 3.3 went off the rails: 1. *Data Table UF values are incorrect for 21 and 20 May*...</div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Gemma 3 :12B Row -->
+                        <tr class="hover:bg-gray-50 cursor-pointer transition-colors duration-150" 
+                            data-model="Gemma 3 :12B" 
+                            data-prompt="You are a clinical assistant generating a formal clinical report based on peritoneal dialysis monitoring data.
+You will receive a JSON object that includes:
+*   *Patient Demographics*
+*   *Daily drain volumes (mL per exchange, array per day)*
+*   *Pre-drain weight (kg) per day*
+*   *Blood pressure readings (systolic/diastolic in mmHg) per day*
+*   (Optional) Other fields like 'bag volume' or 'dialysate concentration'
+
+### Your tasks:
+1.  *Calculate the Daily UF*:
+    *   Sum each day's drain volumes.
+    *   Convert to *liters, round to **2 decimal places*.
+    *   This represents *total drain*, not net UF (unless fill volume is provided).
+2.  *Compute UF Statistics*:
+    *   Mean and standard deviation of daily UF values.
+    *   Define anomaly threshold as *Mean + 1 SD*.
+3.  *Build a Daily Monitoring Table*:
+    *   Columns: Date, UF (L), Weight (kg), BP (mmHg), Anomalies
+    *   Flag anomalies such as:
+        *   UF above the anomaly threshold
+        *   Weight change > 0.5 kg from previous day
+        *   Hypertension: systolic ≥140 or diastolic ≥90
+4.  *Summarize the Top 3 Anomalies*:
+    *   Highlight most clinically relevant deviations with date, value, and reason.
+5.  *Give Clinical Recommendations*:
+    *   Based on anomalies, suggest actions: fluid/diet control, medication review, etc.
+6.  *Note Data Limitations*:
+    *   Clearly state if assumptions are made (e.g., if fill volume is missing).
+    *   Flag suspicious or inconsistent fields (e.g., bag volume mismatch).
+
+### Output format:
+*   Use markdown with numbered sections and bold labels
+*   Formal clinical tone (not conversational)
+*   Ensure accuracy and avoid hallucination — don't infer anything not in data"
+                            data-output="Clinical Report: Peritoneal Dialysis Monitoring
+
+### Patient Summary
+- **ID:** 85h49272ha
+- **Age:** 23
+- **Gender:** Male
+- **Race:** Malay
+- **Religion:** Islam
+- **Distance to Hospital:** 12.3 km
+
+### Dialysis Details
+- **Type:** Peritoneal Dialysis
+- **Solution Concentration:** 1.5%
+- **Bag Volume:** 5.5 liters
+- **EPO Regimen:** 3 times a month (Procrit)
+
+### Data Table
+| Date        | UF (L) | Weight (kg) | BP (mmHg) |
+|-------------|--------|-------------|-----------|
+| 2025-05-23  | 0.90   | 70          | 135/75    |
+| 2025-05-22  | 0.85   | 69.5        | 142/80    |
+| 2025-05-21  | 0.87   | 70.2        | 138/77    |
+| 2025-05-20  | 0.87   | 69.8        | 135/81    |
+| 2025-05-19  | 0.84   | 70.2        | 147/80    |
+| 2025-05-18  | 0.75   | 69.5        | 130/78    |
+| 2025-05-17  | 0.80   | 70.2        | 130/75    |
+
+### Top 3 Anomalies
+1. **UF Anomaly:** 23 May 2025, UF = 0.90 L (exceeds mean + 1 SD)
+2. **Weight Change:** 17-18 May 2025, 70.2 kg to 69.5 kg (Decrease of 0.7 kg)
+3. **Blood Pressure:** 19 May 2025, 147/80 mmHg (Systolic > 140 mmHg)
+
+### Recommendations
+- Adjust dialysis to increase UF if possible
+- Monitor weight and blood pressure closely
+- Consider dietary consult for weight management
+
+### Next Steps
+- Follow-up in 1 week
+- Labs: Kt/V, albumin, creatinine, electrolytes"
+                            data-issue="UF Volume is Incorrect:
+
+- The UF volume for 21 May should be 0.87 L instead of 0.89 L.
+- The UF volume for 20 May should be 0.87 L instead of 0.84 L.
+
+Anomalies Not Detected:
+
+- The system failed to flag the UF anomaly for 23 May, where UF = 0.90 L, exceeding the mean + 1 SD threshold.
+- Weight change anomalies on 17→18 May and 21→22 May were not reported.
+- Blood pressure anomaly on 22 May was omitted.
+
+Misleading Stability Indications:
+
+- The report downplayed the UF outlier on 23 May due to incorrect UF values for 21 and 20 May.
+- Genuine weight and BP excursions were minimized or missed entirely.">
+                            <td class="px-6 py-4 text-sm font-semibold text-gray-800 align-top">Gemma 3 :12B</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">You are a clinical assistant generating a formal clinical report based on patient data...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">Clinical Report: Peritoneal Dialysis Monitoring ### Patient Summary - **ID:** 85h49272ha...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">UF Volume is Incorrect: - The UF volume for 21 May should be 0.87 L instead of 0.89 L...</div>
+                            </td>
+                        </tr>
+
+                        <!-- MedGemma:4B Row -->
+                        <tr class="hover:bg-gray-50 cursor-pointer transition-colors duration-150" 
+                            data-model="MedGemma:4B" 
+                            data-prompt="You are a clinical assistant generating a formal clinical report based on peritoneal dialysis monitoring data.
+You will receive a JSON object that includes:
+*   *Patient Demographics*
+*   *Daily drain volumes (mL per exchange, array per day)*
+*   *Pre-drain weight (kg) per day*
+*   *Blood pressure readings (systolic/diastolic in mmHg) per day*
+*   (Optional) Other fields like 'bag volume' or 'dialysate concentration'
+
+### Your tasks:
+1.  *Calculate the Daily UF*:
+    *   Sum each day's drain volumes.
+    *   Convert to *liters, round to **2 decimal places*.
+    *   This represents *total drain*, not net UF (unless fill volume is provided).
+2.  *Compute UF Statistics*:
+    *   Mean and standard deviation of daily UF values.
+    *   Define anomaly threshold as *Mean + 1 SD*.
+3.  *Build a Daily Monitoring Table*:
+    *   Columns: Date, UF (L), Weight (kg), BP (mmHg), Anomalies
+    *   Flag anomalies such as:
+        *   UF above the anomaly threshold
+        *   Weight change > 0.5 kg from previous day
+        *   Hypertension: systolic ≥140 or diastolic ≥90
+4.  *Summarize the Top 3 Anomalies*:
+    *   Highlight most clinically relevant deviations with date, value, and reason.
+5.  *Give Clinical Recommendations*:
+    *   Based on anomalies, suggest actions: fluid/diet control, medication review, etc.
+6.  *Note Data Limitations*:
+    *   Clearly state if assumptions are made (e.g., if fill volume is missing).
+    *   Flag suspicious or inconsistent fields (e.g., bag volume mismatch).
+
+### Output format:
+*   Use markdown with numbered sections and bold labels
+*   Formal clinical tone (not conversational)
+*   Ensure accuracy and avoid hallucination — don't infer anything not in data"
+                            data-output="```markdown
+# Peritoneal Dialysis Monitoring Report
+
+**Patient ID:** 85h49272ha
+**Gender:** Male
+**Age:** 23
+**Solution:** DPD
+**Date:** 2025-05-23
+
+## Summary
+
+This report summarizes the peritoneal dialysis monitoring data for the patient. Key findings include:
+
+*   **Fluid Removal:** The patient has been removing an average of 300 mL of fluid per session.
+*   **Blood Pressure:** The patient's blood pressure is generally within a normal range, with systolic readings between 130 and 147 mmHg and diastolic readings between 75 and 81 mmHg.
+*   **Weight:** The patient's weight has been relatively stable, with pre-drain weights ranging from 69.5 kg to 70.2 kg.
+
+## Detailed Data
+
+### Fluid Removal
+
+The patient has removed a total of 300 mL of fluid over the monitoring period.
+
+| Date       | Volume Removed (mL) |
+| ---------- | ------------------- |
+| 2025-05-23 | 300                 |
+| 2025-05-22 | 300                 |
+| 2025-05-21 | 300                 |
+| 2025-05-20 | 300                 |
+| 2025-05-19 | 300                 |
+| 2025-05-18 | 300                 |
+| 2025-05-17 | 300                 |
+
+### Blood Pressure
+
+| Date       | Systolic (mmHg) | Diastolic (mmHg) |
+| ---------- | --------------- | ---------------- |
+| 2025-05-23 | 135             | 75               |
+| 2025-05-22 | 142             | 80               |
+| 2025-05-21 | 138             | 77               |
+| 2025-05-20 | 135             | 81               |
+| 2025-05-19 | 147             | 80               |
+| 2025-05-18 | 130             | 78               |
+| 2025-05-17 | 130             | 75               |
+
+### Weight
+
+| Date       | Pre-drain Weight (kg) |
+| ---------- | --------------------- |
+| 2025-05-23 | 70                   |
+| 2025-05-22 | 69.5                  |
+| 2025-05-21 | 70.2                  |
+| 2025-05-20 | 69.8                  |
+| 2025-05-19 | 70.2                  |
+| 2025-05-18 | 69.5                  |
+| 2025-05-17 | 70.2                  |
+
+## Daily Monitoring Table
+
+| Date       | UF (L) | Weight (kg) | BP (mmHg) | Anomalies |
+| ---------- | ------ | ----------- | --------- | --------- |
+| 2025-05-23 | 1.0    | 70          | 135/75    |           |
+| 2025-05-22 | 1.0    | 69.5        | 142/80    |           |
+| 2025-05-21 | 1.0    | 70.2        | 138/77    |           |
+| 2025-05-20 | 1.0    | 69.8        | 135/81    |           |
+| 2025-05-19 | 1.0    | 70.2        | 147/80    |           |
+| 2025-05-18 | 1.0    | 69.5        | 130/78    |           |
+| 2025-05-17 | 1.0    | 70.2        | 130/75    |           |
+
+## Top 3 Anomalies
+
+1.  **Date:** 2025-05-19
+    *   **Value:** Systolic BP 147 mmHg
+    *   **Reason:** Systolic blood pressure is above the normal range.
+2.  **Date:** 2025-05-22
+    *   **Value:** Diastolic BP 80 mmHg
+    *   **Reason:** Diastolic blood pressure is above the normal range.
+3.  **Date:** 2025-05-22
+    *   **Value:** Weight change > 0.5 kg from previous day
+    *   **Reason:** Weight increased by 0.5 kg from 69.5 kg to 69.5 kg.
+
+## Clinical Recommendations
+
+Based on the monitoring data, the following recommendations are made:
+
+*   **Blood Pressure:** Monitor blood pressure regularly. If hypertension persists, consider medication review and dietary modifications.
+*   **Weight:** Continue to monitor weight. If significant weight gain is observed, consider dietary adjustments and fluid intake control.
+*   **Fluid Intake:** Ensure adequate fluid intake to maintain adequate dialysis efficiency.
+
+## Data Limitations
+
+*   The UF data is based on the volume removed during each exchange and does not represent net fluid removal (unless fill volume is provided).
+*   The blood pressure readings are based on a single measurement per day.
+*   The weight data is based on pre-drain weights, which may not accurately reflect overall fluid status."
+                            data-issue="UF Volume is Incorrect
+You've stated '300 mL per session' and '1.0 L per day' – both are incorrect.
+
+Based on the JSON data, most daily total drain volumes are ~850–900 mL, not 1000 mL.
+
+✅ Correct example (e.g., for 23 May 2025):
+
+300 + 300 + 300 = 900 mL = 0.90 L
+
+Update the UF column in the table and all related summaries.
+
+2. Incorrect Anomalies
+You flagged 22 May weight change but wrote 'from 69.5 to 69.5' — this is not a change.
+
+Diastolic BP of 80 mmHg is not above the 90 mmHg anomaly threshold.
+
+The actual Top 3 anomalies based on the data and rule are:
+
+✅ Correct Top 3 Anomalies:
+
+19 May 2025 – Systolic BP = 147 mmHg (≥140 → Hypertension)
+
+22 May 2025 – Systolic BP = 142 mmHg (Hypertension)
+
+21 May 2025 – Weight change from 69.5 → 70.2 = +0.7 kg (>0.5 kg)
+
+3. Solution Label:
+'Solution: DPD' → Unclear abbreviation. The correct field in JSON was:
+
+'Dialysis_Type': 'Peritoneal Dialysis'
+✅ Better: **Dialysis Type:** Peritoneal Dialysis
+
+4. Fluid Summary Is Misleading
+You mentioned: 'removed a total of 300 mL of fluid over the monitoring period' – that's clearly inaccurate.
+✅ Correct phrasing: 'Daily total UF ranged between 0.75 L and 0.90 L per day over 7 days.'">
+                            <td class="px-6 py-4 text-sm font-semibold text-gray-800 align-top">MedGemma:4B</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">You are a clinical assistant generating a formal clinical report based on patient data...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview"># Peritoneal Dialysis Monitoring Report **Patient ID:** 85h49272ha **Gender:** Male...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">UF Volume is Incorrect You've stated '300 mL per session' and '1.0 L per day' – both are incorrect...</div>
+                            </td>
+                        </tr>
+
+                        <!-- MedLLama:7B Row -->
+                        <tr class="hover:bg-gray-50 cursor-pointer transition-colors duration-150" 
+                            data-model="MedLLama:7B" 
+                            data-prompt="You are a clinical assistant generating a formal clinical report based on peritoneal dialysis monitoring data.
+You will receive a JSON object that includes:
+*   *Patient Demographics*
+*   *Daily drain volumes (mL per exchange, array per day)*
+*   *Pre-drain weight (kg) per day*
+*   *Blood pressure readings (systolic/diastolic in mmHg) per day*
+*   (Optional) Other fields like 'bag volume' or 'dialysate concentration'
+
+### Your tasks:
+1.  *Calculate the Daily UF*:
+    *   Sum each day's drain volumes.
+    *   Convert to *liters, round to **2 decimal places*.
+    *   This represents *total drain*, not net UF (unless fill volume is provided).
+2.  *Compute UF Statistics*:
+    *   Mean and standard deviation of daily UF values.
+    *   Define anomaly threshold as *Mean + 1 SD*.
+3.  *Build a Daily Monitoring Table*:
+    *   Columns: Date, UF (L), Weight (kg), BP (mmHg), Anomalies
+    *   Flag anomalies such as:
+        *   UF above the anomaly threshold
+        *   Weight change > 0.5 kg from previous day
+        *   Hypertension: systolic ≥140 or diastolic ≥90
+4.  *Summarize the Top 3 Anomalies*:
+    *   Highlight most clinically relevant deviations with date, value, and reason.
+5.  *Give Clinical Recommendations*:
+    *   Based on anomalies, suggest actions: fluid/diet control, medication review, etc.
+6.  *Note Data Limitations*:
+    *   Clearly state if assumptions are made (e.g., if fill volume is missing).
+    *   Flag suspicious or inconsistent fields (e.g., bag volume mismatch).
+
+### Output format:
+*   Use markdown with numbered sections and bold labels
+*   Formal clinical tone (not conversational)
+*   Ensure accuracy and avoid hallucination — don't infer anything not in data"
+                            data-output="This patient's UF has been relatively stable, with an average of 300 mL per session. The weight data shows a range between 69.5 and 70.2 kg pre-drain. Systolic blood pressure is consistently above the normal range, while diastolic BP is within the normal range. Anomalies include a significant weight gain (> 0.5 kg) from previous day, hypertension (systolic > 130 or diastolic > 80 mmHg), and non-compliance with fluid intake control. Recommendations are to monitor BP regularly, consider medication review and dietary modifications if hypertension persists, continue to monitor weight, ensure adequate fluid intake for efficient dialysis, and note data limitations such as missing fill volume."
+                            data-issue="'Average of 300 mL per session' is misleading:
+
+You should compute UF per day (total drain volume), not per session.
+
+For example, 3 bags × 300 mL = 900 mL/day = 0.90 L, not 'per session'.
+
+Anomaly thresholds not formally computed:
+
+The anomaly threshold should be: Mean UF + 1 SD, which was not shown.
+
+Hypertension definition mismatch:
+
+Your summary flags systolic >130 as hypertension, but original criteria is ≥140 systolic or ≥90 diastolic.
+
+Only 22 May (142/80) and 19 May (147/80) meet this.
+
+'Non-compliance with fluid intake' is not supported by data:
+
+That inference wasn't in the JSON data. Avoid assuming behavior.
+
+Structure and markdown formatting not followed:
+
+Report should be in formal, numbered markdown sections with bold headers.">
+                            <td class="px-6 py-4 text-sm font-semibold text-gray-800 align-top">MedLLama:7B</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">You are a clinical assistant generating a formal clinical report based on patient data...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">This patient's UF has been relatively stable, with an average of 300 mL per session...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">'Average of 300 mL per session' is misleading: You should compute UF per day...</div>
+                            </td>
+                        </tr>
+
+                        <!-- MedGemma:27B Row -->
+                        <tr class="hover:bg-gray-50 cursor-pointer transition-colors duration-150" 
+                            data-model="MedGemma:27B" 
+                            data-prompt="You are a clinical assistant generating a formal clinical report based on peritoneal dialysis monitoring data.
+You will receive a JSON object that includes:
+*   *Patient Demographics*
+*   *Daily drain volumes (mL per exchange, array per day)*
+*   *Pre-drain weight (kg) per day*
+*   *Blood pressure readings (systolic/diastolic in mmHg) per day*
+*   (Optional) Other fields like 'bag volume' or 'dialysate concentration'
+
+### Your tasks:
+1.  *Calculate the Daily UF*:
+    *   Sum each day's drain volumes.
+    *   Convert to *liters, round to **2 decimal places*.
+    *   This represents *total drain*, not net UF (unless fill volume is provided).
+2.  *Compute UF Statistics*:
+    *   Mean and standard deviation of daily UF values.
+    *   Define anomaly threshold as *Mean + 1 SD*.
+3.  *Build a Daily Monitoring Table*:
+    *   Columns: Date, UF (L), Weight (kg), BP (mmHg), Anomalies
+    *   Flag anomalies such as:
+        *   UF above the anomaly threshold
+        *   Weight change > 0.5 kg from previous day
+        *   Hypertension: systolic ≥140 or diastolic ≥90
+4.  *Summarize the Top 3 Anomalies*:
+    *   Highlight most clinically relevant deviations with date, value, and reason.
+5.  *Give Clinical Recommendations*:
+    *   Based on anomalies, suggest actions: fluid/diet control, medication review, etc.
+6.  *Note Data Limitations*:
+    *   Clearly state if assumptions are made (e.g., if fill volume is missing).
+    *   Flag suspicious or inconsistent fields (e.g., bag volume mismatch).
+
+### Output format:
+*   Use markdown with numbered sections and bold labels
+*   Formal clinical tone (not conversational)
+*   Ensure accuracy and avoid hallucination — don't infer anything not in data"
+                            data-output="```markdown
+# Peritoneal Dialysis Monitoring Report
+
+**Patient ID:** 85h49272ha
+**Date:** May 24, 2025
+
+**1. Patient Demographics**
+
+*   **Gender:** Male
+*   **Age:** 23
+*   **Dialysis Type:** Peritoneal Dialysis
+*   **Solution Provider:** Baxter
+*   **Bag Concentration:** 1.5% (all bags)
+*   **EPO Injection:** Procrit (3x per month)
+*   **Race:** Malay
+*   **Religion:** Islam
+*   **Distance from Hospital:** 12.3 KM
+
+**2. Daily Ultrafiltration (UF) Calculation**
+
+The following calculations assume a fill volume of 5.5 Liters (as provided in the 'Bag_Volume' field).  Total daily drain volume is calculated by summing the volumes from all bags for each day.
+
+| Date        | Total Drain Volume (mL) | Total Drain Volume (L) |
+| ----------- | ----------------------- | ---------------------- |
+| 23 May 2025 | 900                     | 0.90                   |
+| 22 May 2025 | 850                     | 0.85                   |
+| 21 May 2025 | 880                     | 0.88                   |
+| 20 May 2025 | 870                     | 0.87                   |
+| 19 May 2025 | 840                     | 0.84                   |
+| 18 May 2025 | 750                     | 0.75                   |
+| 17 May 2025 | 850                     | 0.85                   |
+
+**UF Statistics:**
+
+*   **Mean Daily UF (L):** 0.86
+*   **Standard Deviation:** 0.06
+*   **Anomaly Threshold (Mean + 1 SD):** 0.92 L
+
+**3. Daily Monitoring Table**
+
+| Date        | UF (L) | Weight (kg) | BP (mmHg) | Anomalies                               |
+| ----------- | ------ | ----------- | --------- | --------------------------------------- |
+| 23 May 2025 | 0.90   | 70          | 135/75    | UF above threshold                       |
+| 22 May 2025 | 0.85   | 69.5        | 142/80    | Hypertension (Systolic ≥140)            |
+| 21 May 2025 | 0.88   | 70.2        | 138/77    | Weight change > 0.5 kg from previous day |
+| 20 May 2025 | 0.87   | 69.8        | 135/81    | Weight change > 0.5 kg from previous day |
+| 19 May 2025 | 0.84   | 70.2        | 147/80    | Hypertension (Systolic ≥140)            |
+| 18 May 2025 | 0.75   | 69.5        | 130/78    | None                                    |
+| 17 May 2025 | 0.85   | 70.2        | 130/75    | Weight change > 0.5 kg from previous day |
+
+**4. Top 3 Anomalies**
+
+1.  **Date:** 23 May 2025, **Value:** 0.90 L, **Reason:** UF above anomaly threshold (0.92 L).
+2.  **Date:** 22 May 2025, **Value:** 142/80 mmHg, **Reason:** Hypertension (Systolic 142 mmHg).
+3.  **Date:** 19 May 2025, **Value:** 147/80 mmHg, **Reason:** Hypertension (Systolic 147 mmHg).
+
+**5. Clinical Recommendations**
+
+*   **Fluid Management:** The patient exhibited UF above the defined threshold on 23 May 2025. Assess fluid intake and dietary sodium consumption. Consider a fluid restriction if appropriate.
+*   **Blood Pressure Control:**  Elevated systolic blood pressure readings on 22 May 2025 and 19 May 2025 warrant further investigation. Review current antihypertensive medications and assess adherence. Consider ambulatory blood pressure monitoring.
+*   **Weight Monitoring:**  Fluctuations in pre-drain weight should be monitored closely.  Counsel the patient on consistent weighing practices.
+
+**6. Data Limitations**
+
+*   **Fill Volume Assumption:** The UF calculation is based on the provided 'Bag_Volume' of 5.5 Liters.  If the actual fill volume differs, the UF values will be inaccurate.
+*   **Missing Data:** The report is limited to the data provided.  Additional clinical information (e.g., patient symptoms, comorbidities) is not available for a comprehensive assessment.
+*   **Bag Volume Consistency:** The data assumes consistent bag volumes across all exchanges. Any discrepancies in bag volumes used during exchanges would affect the accuracy of the UF calculation.
+```"
+                            data-issue="⚠️ UF Anomaly Threshold Misinterpretation
+You flagged 23 May 2025 as 'UF above threshold' at 0.90 L, but your threshold is 0.92 L.
+➤ Correction: 0.90 < 0.92 → not anomalous.
+✅ Replace the anomaly label for 23 May with '–' or 'None'.
+
+2. ⚠️ Incorrect Total for 21 May
+Your table says 880 mL (0.88 L), but JSON shows:
+
+{ 'Volume_ml': 310 }, { 'Volume_ml': 290 }, { 'Volume_ml': 270 }
+Total = 870 mL = 0.87 L
+➤ Fix both table and stats to reflect 0.87 L.
+
+3. ⚠️ Weight Change Logic Needs Clarification
+You flagged weight anomalies on:
+
+21 May (from 69.5 → 70.2 = +0.7 kg ✅)
+
+20 May (from 70.2 → 69.8 = −0.4 kg ❌)
+
+17 May (from 69.5 → 70.2 = +0.7 kg ✅)
+
+➤ Correction: Only flag if absolute change > 0.5 kg
+✅ Flag 21 May and 17 May
+❌ Remove 20 May from anomalies.
+
+4. ⚠️ Top 3 Anomalies Section
+You included UF anomaly on 23 May, but as above, it's below the threshold → not valid.
+✅ Replace with a weight anomaly (e.g., 21 May or 17 May).">
+                            <td class="px-6 py-4 text-sm font-semibold text-gray-800 align-top">MedGemma:27B</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">You are a clinical assistant generating a formal clinical report based on patient data...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview"># Peritoneal Dialysis Monitoring Report **Patient ID:** 85h49272ha **Date:** May 24, 2025...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">⚠️ UF Anomaly Threshold Misinterpretation You flagged 23 May 2025 as 'UF above threshold' at 0.90 L...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- Add Entry Form (hidden initially) -->
-    <div id="addFormContainer" class="mb-6 p-4 bg-gray-50 rounded-lg shadow-md hidden">
-      <h2 class="text-xl font-semibold mb-3">Add New Model Entry</h2>
-      <form id="addEntryForm" class="space-y-4">
-        <div>
-          <label class="block text-gray-700 font-medium mb-1" for="modelInput">Model</label>
-          <input id="modelInput" type="text" required
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    <!-- Modal -->
+    <div id="details-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div id="modal-backdrop" class="fixed inset-0 bg-gray-800 bg-opacity-75"></div>
+        <div class="modal-content relative bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div class="flex items-start justify-between p-5 border-b rounded-t">
+                <h2 id="modal-title" class="text-2xl font-bold text-gray-900"></h2>
+                <button id="modal-close-btn" type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-6 overflow-y-auto">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Prompt</h3>
+                    <pre id="modal-prompt" class="bg-gray-50 p-4 rounded-lg text-gray-700 whitespace-pre-wrap text-sm font-sans max-h-[300px] overflow-y-auto"></pre>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Output</h3>
+                    <pre id="modal-output" class="bg-gray-50 p-4 rounded-lg text-gray-700 whitespace-pre-wrap text-sm font-sans max-h-[300px] overflow-y-auto"></pre>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-red-700 mb-2">Issue Analysis</h3>
+                    <pre id="modal-issue" class="bg-red-50 p-4 rounded-lg text-red-800 whitespace-pre-wrap text-sm font-sans border border-red-200 max-h-[300px] overflow-y-auto"></pre>
+                </div>
+            </div>
+            <div class="flex items-center justify-end p-4 border-t border-gray-200 rounded-b">
+                <button id="modal-close-footer-btn" type="button" class="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm">Close</button>
+            </div>
         </div>
-        <div>
-          <label class="block text-gray-700 font-medium mb-1" for="promptInput">Prompt</label>
-          <textarea id="promptInput" rows="3" required
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-        </div>
-        <div>
-          <label class="block text-gray-700 font-medium mb-1" for="outputInput">Output</label>
-          <textarea id="outputInput" rows="2" required
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-        </div>
-        <div>
-          <label class="block text-gray-700 font-medium mb-1" for="issueInput">Issue</label>
-          <textarea id="issueInput" rows="2" required
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-        </div>
-        <div class="flex space-x-4">
-          <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
-            Save Entry
-          </button>
-          <button type="button" id="cancelAddBtn" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition">
-            Cancel
-          </button>
-        </div>
-      </form>
     </div>
 
-    <div class="overflow-x-auto rounded-lg shadow-md">
-      <table class="min-w-full divide-y divide-gray-200" id="resultsTable">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider md:px-6">Model</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider md:px-6">Prompt</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider md:px-6">Output</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider md:px-6">Issue</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200" id="resultsBody">
-          <!-- Rows will be inserted here by JS -->
-        </tbody>
-      </table>
-    </div>
-  </div>
+    <script>
+        (function () {
+            // --- DOM Element References ---
+            const tableBody = document.getElementById('results-body');
+            const modal = document.getElementById('details-modal');
+            const modalBackdrop = document.getElementById('modal-backdrop');
+            const modalTitle = document.getElementById('modal-title');
+            const modalPrompt = document.getElementById('modal-prompt');
+            const modalOutput = document.getElementById('modal-output');
+            const modalIssue = document.getElementById('modal-issue');
+            const closeButtons = [
+                document.getElementById('modal-close-btn'), 
+                document.getElementById('modal-close-footer-btn')
+            ];
 
-  <!-- Modal -->
-  <div id="modal" class="fixed inset-0 hidden items-center justify-center p-4 z-50 modal-bg">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg md:max-w-2xl lg:max-w-3xl animate-fade-in-up overflow-hidden">
-      <div class="flex justify-between items-center bg-blue-600 text-white p-4 rounded-t-xl">
-        <h3 id="modalTitle" class="text-xl font-semibold"></h3>
-        <button id="modalCloseBtn" class="text-white hover:text-gray-200 text-2xl font-bold">&times;</button>
-      </div>
-      <div class="p-4 max-h-[70vh] overflow-y-auto">
-        <pre id="modalContent" class="whitespace-pre-wrap text-gray-800"></pre>
-      </div>
-      <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end rounded-b-xl">
-        <button id="modalCloseBtnFooter" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
+            // Function to handle line breaks and formatting in the modal
+            function formatContent(text) {
+                // Replace escaped newlines with actual newlines
+                return text.replace(/\\n/g, '\n');
+            }
 
-<script>
-  (function(){
-    // Sample data, same as your original
-    let results = [
-      {
-        id: 1,
-        model: 'gemini-2.0-flash',
-        prompt: `You are a clinical assistant analyzing peritoneal dialysis data for a patient.
-Given the patient information and daily dialysis data including drain volumes in milliliters (an array of numbers per day), weight in kilograms, and blood pressure readings (systolic/diastolic), please:
-1.  For each day, *sum the drain volumes to calculate the total ultrafiltration (UF) in liters*, rounding to two decimal places (e.g., 850 mL = 0.85 L).
+            function showModal(rowElement) {
+                // Get the data from the clicked row's data attributes
+                const model = rowElement.getAttribute('data-model');
+                const prompt = rowElement.getAttribute('data-prompt');
+                const output = rowElement.getAttribute('data-output');
+                const issue = rowElement.getAttribute('data-issue');
 
-2.  Extract the patient's weight and blood pressure for the same dates.
+                // Populate the modal with the formatted data
+                modalTitle.textContent = `Details for: ${model || ''}`;
+                modalPrompt.textContent = formatContent(prompt || '');
+                modalOutput.textContent = formatContent(output || '');
+                modalIssue.textContent = formatContent(issue || '');
 
-3.  Generate a clinical report with the following sections:
+                // Show the modal
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
 
-*   *Patient Summary* (basic demographics, dialysis type, bag info, EPO injection, race, religion, hospital distance)
+            function closeModal() {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
 
-*   *Data Table* listing each date with: UF in liters, weight (kg), blood pressure (Systolic/Diastolic mmHg)
+            // --- Event Listeners ---
+            tableBody.addEventListener('click', function (event) {
+                const row = event.target.closest('tr');
+                if (row && row.hasAttribute('data-model')) {
+                    showModal(row);
+                }
+            });
 
-*   *Top 3 Anomalies* based on:
+            closeButtons.forEach(btn => {
+                if (btn) btn.addEventListener('click', closeModal);
+            });
+            
+            if (modalBackdrop) {
+                modalBackdrop.addEventListener('click', closeModal);
+            }
 
-    *   UF values higher than the average plus 1 standard deviation
-
-    *   Weight changes greater than 0.5 kg compared to previous day
-
-    *   Blood pressure above 140/90 mmHg
-
-*   *Recommendations* for UF, weight, and blood pressure management
-
-*   *Next Steps* including lab tests, monitoring, consults, and follow-ups
-
-Present the report in clear, professional clinical language without code or raw data tables. Use full sentences and bullet points where appropriate.
-Ensure all UF calculations are accurate, based solely on summing daily drain volumes converted to liters with two decimals.  
-  
-this is the JSON:  
-  
-{ "Patient_ID": "85h49272ha", "Gender": "Male", "Age": 23, "Dialysis_Type": "Peritoneal Dialysis", "Solution_Provider": "Baxter", "Bag_Concentration": { "Bag 1": "1.5%", "Bag 2": "1.5%", "Bag 3": "1.5%" }, "Bag_Volume": "5.5 Litres", "EPO_Injection": "Procrit (3x per month)", "Race": "Malay", "Religion": "Islam", "Distance_from_hospital": "12.3KM", "UF_Reading_Data": [ { "Date": "23 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" } ] }, { "Date": "22 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 250, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "21 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 310, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 290, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 270, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "20 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 270, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "19 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 15, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 290, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "18 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" } ] }, { "Date": "17 May 2025", "Bags": [ { "Bag": 1, "Time": "08:05", "Volume_ml": 300, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 2, "Time": "10:30", "Volume_ml": 250, "Concentration_%": 1.5, "Condition": "Clear" }, { "Bag": 3, "Time": "12:30", "Volume_ml": 260, "Concentration_%": 1.5, "Condition": "Clear" } ] } ] }`,
-        output: `Clinical report for the patient:
-  
-- Patient summary: Male, 23, Peritoneal Dialysis, Solution Provider Baxter, Bags 1.5% concentration, Volume 5.5 L, EPO injections 3x per month, Malay, Islamic, 12.3KM from hospital.
-  
-- Data Table: Summarizing dates with UF in liters, weight, and blood pressure is required.
-  
-- Top 3 anomalies: UF > mean + 1 SD, Weight changes > 0.5 kg, BP > 140/90 mmHg.
-  
-- Recommendations and next steps.
-  
-(Note: The output is a placeholder, the detailed report will be generated by the model.)`,
-        issue: "Some slight inconsistencies in UF calculation observed."
-      },
-      {
-        id: 2,
-        model: 'gemini-1.0-base',
-        prompt: 'Write a story about a cat who wants to explore the world.',
-        output: 'Once upon a time, a curious cat named Whiskers set out on a grand adventure...',
-        issue: 'No issues.'
-      },
-      {
-        id: 3,
-        model: 'gpt-4o-mini',
-        prompt: 'Explain quantum entanglement in simple terms.',
-        output: 'Quantum entanglement occurs when two particles become linked so that the state of one instantly influences the state of the other, regardless of distance.',
-        issue: 'Output is accurate and clear.'
-      }
-    ];
-
-    // DOM elements
-    const resultsBody = document.getElementById('resultsBody');
-    const modal = document.getElementById('modal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalContent = document.getElementById('modalContent');
-    const modalCloseBtn = document.getElementById('modalCloseBtn');
-    const modalCloseBtnFooter = document.getElementById('modalCloseBtnFooter');
-    const showAddFormBtn = document.getElementById('showAddFormBtn');
-    const addFormContainer = document.getElementById('addFormContainer');
-    const addEntryForm = document.getElementById('addEntryForm');
-    const cancelAddBtn = document.getElementById('cancelAddBtn');
-
-    // Render table rows
-    function renderTable() {
-      resultsBody.innerHTML = '';
-      results.forEach(entry => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-gray-50 cursor-pointer';
-        tr.innerHTML = `
-          <td class="px-4 py-3 md:px-6 text-gray-900 font-medium">${escapeHtml(entry.model)}</td>
-          <td class="px-4 py-3 md:px-6 max-w-xs truncate" title="${escapeHtml(entry.prompt)}">${escapeHtml(entry.prompt)}</td>
-          <td class="px-4 py-3 md:px-6 max-w-xs truncate" title="${escapeHtml(entry.output)}">${escapeHtml(entry.output)}</td>
-          <td class="px-4 py-3 md:px-6 max-w-xs truncate" title="${escapeHtml(entry.issue)}">${escapeHtml(entry.issue)}</td>
-        `;
-        tr.addEventListener('click', () => {
-          showModal(entry);
-        });
-        resultsBody.appendChild(tr);
-      });
-    }
-
-    // Show modal with full details
-    function showModal(entry) {
-      modalTitle.textContent = `Details for Model: ${entry.model}`;
-      modalContent.textContent =
-        `Prompt:\n${entry.prompt}\n\nOutput:\n${entry.output}\n\nIssue:\n${entry.issue}`;
-      modal.classList.remove('hidden');
-      document.body.style.overflow = 'hidden'; // prevent background scroll
-    }
-
-    // Close modal
-    function closeModal() {
-      modal.classList.add('hidden');
-      document.body.style.overflow = '';
-    }
-
-    // Escape HTML to prevent injection
-    function escapeHtml(text) {
-      if (!text) return '';
-      return text.replace(/[&<>"']/g, function(m) {
-        return {
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#39;'
-        }[m];
-      });
-    }
-
-    // Show add entry form
-    showAddFormBtn.addEventListener('click', () => {
-      addFormContainer.classList.remove('hidden');
-      showAddFormBtn.disabled = true;
-      addEntryForm.reset();
-    });
-
-    // Cancel add entry
-    cancelAddBtn.addEventListener('click', () => {
-      addFormContainer.classList.add('hidden');
-      showAddFormBtn.disabled = false;
-    });
-
-    // Handle form submit
-    addEntryForm.addEventListener('submit', e => {
-      e.preventDefault();
-
-      const newEntry = {
-        id: Date.now(),
-        model: addEntryForm.modelInput.value.trim(),
-        prompt: addEntryForm.promptInput.value.trim(),
-        output: addEntryForm.outputInput.value.trim(),
-        issue: addEntryForm.issueInput.value.trim()
-      };
-
-      if (!newEntry.model || !newEntry.prompt || !newEntry.output || !newEntry.issue) {
-        alert('Please fill all fields.');
-        return;
-      }
-
-      results.push(newEntry);
-      renderTable();
-      addFormContainer.classList.add('hidden');
-      showAddFormBtn.disabled = false;
-    });
-
-    // Modal close buttons
-    modalCloseBtn.addEventListener('click', closeModal);
-    modalCloseBtnFooter.addEventListener('click', closeModal);
-
-    // Close modal on clicking outside content
-    modal.addEventListener('click', e => {
-      if (e.target === modal) {
-        closeModal();
-      }
-    });
-
-    // Initial render
-    renderTable();
-  })();
-</script>
-
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeModal();
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
