@@ -702,6 +702,182 @@ You included UF anomaly on 23 May, but as above, it's below the threshold → no
                                 <div class="cell-preview">⚠️ UF Anomaly Threshold Misinterpretation You flagged 23 May 2025 as 'UF above threshold' at 0.90 L...</div>
                             </td>
                         </tr>
+
+                        <!-- Gemma 3 :27B Row -->
+                        <tr class="hover:bg-gray-50 cursor-pointer transition-colors duration-150" 
+                            data-model="Gemma 3 :27B" 
+                            data-prompt="You are a clinical assistant generating a formal clinical report based on peritoneal dialysis monitoring data.
+You will receive a JSON object that includes:
+*   *Patient Demographics*
+*   *Daily drain volumes (mL per exchange, array per day)*
+*   *Pre-drain weight (kg) per day*
+*   *Blood pressure readings (systolic/diastolic in mmHg) per day*
+*   (Optional) Other fields like &quot;bag volume&quot; or &quot;dialysate concentration&quot;
+
+### Your tasks:
+1.  *Calculate the Daily UF*:
+    *   Sum each day's drain volumes.
+    *   Convert to *liters, round to **2 decimal places*.
+    *   This represents *total drain*, not net UF (unless fill volume is provided).
+2.  *Compute UF Statistics*:
+    *   Mean and standard deviation of daily UF values.
+    *   Define anomaly threshold as *Mean + 1 SD*.
+3.  *Build a Daily Monitoring Table*:
+    *   Columns: Date, UF (L), Weight (kg), BP (mmHg), Anomalies
+    *   Flag anomalies such as:
+        *   UF above the anomaly threshold
+        *   Weight change > 0.5 kg from previous day
+        *   Hypertension: systolic ≥140 or diastolic ≥90
+4.  *Summarize the Top 3 Anomalies*:
+    *   Highlight most clinically relevant deviations with date, value, and reason.
+5.  *Give Clinical Recommendations*:
+    *   Based on anomalies, suggest actions: fluid/diet control, medication review, etc.
+6.  *Note Data Limitations*:
+    *   Clearly state if assumptions are made (e.g., if fill volume is missing).
+    *   Flag suspicious or inconsistent fields (e.g., bag volume mismatch).
+
+### Output format:
+*   Use markdown with numbered sections and bold labels
+*   Formal clinical tone (not conversational)
+*   Ensure accuracy and avoid hallucination — don't infer anything not in data"
+                            data-output="Peritoneal Dialysis Monitoring Report
+
+Patient ID: 85h49272ha
+Date of Report: October 26, 2023
+
+1. Introduction
+
+This report summarizes peritoneal dialysis (PD) monitoring data for the patient identified above, covering the period from May 17, 2025, to May 23, 2025. The purpose of this report is to identify trends and anomalies in ultrafiltration (UF) volumes, weight, and blood pressure, and to provide clinical recommendations.
+
+2. Data Summary &amp; Assumptions
+
+The provided data includes daily drain volumes, pre-drain weights, and blood pressure readings. The bag volume is reported as 5.5 Litres, and the bag concentration is consistently 1.5%.
+
+Assumption: The total fill volume per day is assumed to be 5.5 Litres (based on the provided &quot;Bag_Volume&quot; field). Therefore, the calculated UF represents the difference between total drain and fill volume. If the actual fill volume differs, the UF calculations will be inaccurate.
+
+Data Limitation: No information regarding target weight is provided.
+
+3. Ultrafiltration (UF) Calculation &amp; Statistics
+
+Date	Drain Volume (mL)	UF (L)
+23 May 2025	900	0.90
+22 May 2025	800	0.80
+21 May 2025	880	0.88
+20 May 2025	870	0.87
+19 May 2025	840	0.84
+18 May 2025	750	0.75
+17 May 2025	800	0.80
+
+Mean Daily UF: 0.83 L
+
+Standard Deviation of Daily UF: 0.06 L
+
+Anomaly Threshold (Mean + 1 SD): 0.89 L
+
+4. Daily Monitoring Table
+
+Date	UF (L)	Weight (kg)	BP (mmHg)	Anomalies
+23 May 2025	0.90	70	135/75	UF &gt; Anomaly Threshold
+22 May 2025	0.80	69.5	142/80	Hypertension (Systolic ≥140)
+21 May 2025	0.88	70.2	138/77	Weight Change &gt; 0.5 kg (from 22 May)
+20 May 2025	0.87	69.8	135/81	Weight Change &gt; 0.5 kg (from 21 May)
+19 May 2025	0.84	70.2	147/80	Hypertension (Systolic ≥140)
+18 May 2025	0.75	69.5	130/78	None
+17 May 2025	0.80	70.2	130/75	Weight Change &gt; 0.5 kg (from 18 May)
+
+5. Top 3 Anomalies
+
+Date: 23 May 2025, Value: 0.90 L, Reason: UF volume exceeds the calculated anomaly threshold of 0.89 L, indicating potential fluid overload or altered peritoneal membrane function.
+
+Date: 22 May 2025, Value: 142/80 mmHg, Reason: Elevated systolic blood pressure (142 mmHg) indicates potential hypertension.
+
+Date: 19 May 2025, Value: 147/80 mmHg, Reason: Elevated systolic blood pressure (147 mmHg) indicates potential hypertension.
+
+6. Clinical Recommendations
+
+Fluid Management: Investigate the cause of the increased UF on May 23rd. Assess dietary sodium intake and adherence to fluid restrictions.
+
+Blood Pressure Monitoring: Closely monitor blood pressure readings. If hypertension persists, review current medications and consider adjustments in consultation with the patient's physician.
+
+Weight Monitoring: Continue daily weight monitoring. Investigate the cause of weight fluctuations.
+
+Peritoneal Membrane Assessment: Consider assessing peritoneal membrane function (e.g., PET scan) if UF anomalies persist, to rule out membrane deterioration.
+
+Dialysate Review: Evaluate the appropriateness of the current dialysate concentration (1.5%) given the patient's UF profile.
+
+7. Disclaimer
+
+This report is based solely on the provided data. Clinical decisions should be made in conjunction with a comprehensive patient assessment, including physical examination, laboratory results, and patient history. The accuracy of the UF calculations relies on the assumption of a consistent 5.5L fill volume. Any discrepancies in fill volume will affect the validity of these calculations."
+                            data-issue="1. UF Value and Anomaly Threshold Misinterpretation
+You list 23 May 2025 UF = 0.90 L and flag it as above anomaly threshold (0.89 L).
+
+✅ This is correct numerically.
+
+But in earlier reports, you had UF = 900 mL = 0.90 L, which is exactly at the threshold. Since the threshold is Mean + 1 SD = 0.83 + 0.06 = 0.89, anything equal to or above 0.89 L can reasonably be flagged — so this is acceptable.
+
+✅ Verdict: Keep as is, but if your team prefers strict &quot;greater than&quot;, reword to avoid false positives.
+
+2. ❌ Incorrect Drain Volume on 22 &amp; 17 May
+Based on your JSON data:
+
+22 May = 300 + 250 + 300 = 850 mL = 0.85 L
+
+17 May = 300 + 250 + 250 = 800 mL ✅ okay
+
+🔁 Your report incorrectly lists 22 May as 800 mL → 0.80 L.
+
+🔧 Fix this to 850 mL → 0.85 L.
+This affects:
+
+UF table
+
+Mean &amp; SD calculation
+
+Anomaly threshold
+
+3. 🔁 Recalculated UF Statistics (After Fix)
+With corrected values:
+
+Date	Drain Volume (mL)	UF (L)
+23 May 2025	900	0.90
+22 May 2025	850	0.85
+21 May 2025	880	0.88
+20 May 2025	870	0.87
+19 May 2025	840	0.84
+18 May 2025	750	0.75
+17 May 2025	800	0.80
+
+New Mean UF = (0.90 + 0.85 + 0.88 + 0.87 + 0.84 + 0.75 + 0.80) / 7 = 0.841 L
+
+Standard Deviation ≈ 0.05 L
+
+New Threshold = Mean + 1 SD = 0.84 + 0.05 = 0.89 L
+
+✅ Therefore, 0.90 L still counts as an anomaly — so your Top 3 anomalies remain valid after correction.
+
+4. ❌ Weight Change on 20 May is Not &gt;0.5 kg
+| 21 May → 70.2 kg
+| 20 May → 69.8 kg
+🔁 Change = -0.4 kg → not flagged
+
+❌ Please remove &quot;Weight change &gt;0.5 kg&quot; on 20 May in section 4.
+
+✅ Keep:
+
+21 May: 70.2 → from 69.5 → +0.7 kg
+
+17 May: 70.2 → from 69.5 → +0.7 kg">
+                            <td class="px-6 py-4 text-sm font-semibold text-gray-800 align-top">Gemma 3 :27B</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">You are a clinical assistant generating a formal clinical report based on patient data...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">Peritoneal Dialysis Monitoring Report Patient ID: 85h49272ha Date of Report: October 26, 2023...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">1. UF Value and Anomaly Threshold Misinterpretation You list 23 May 2025 UF = 0.90 L and flag it as above anomaly threshold...</div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
