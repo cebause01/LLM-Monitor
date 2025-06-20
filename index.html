@@ -74,6 +74,94 @@
             <p class="mt-2 text-lg text-gray-500">Click on a row to view full details.</p>
         </header>
 
+        <!-- Summary Section -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- Performance Overview -->
+                <div class="flex-1 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h2 class="text-xl font-bold text-blue-800 mb-3">Performance Overview</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Top Performer</h3>
+                            <p class="text-sm text-gray-700">Gemma 3 :27B demonstrated the most accurate clinical analysis with:</p>
+                            <ul class="mt-1 ml-4 list-disc text-sm text-gray-600">
+                                <li>Correct UF calculations for all dates</li>
+                                <li>Complete anomaly detection</li>
+                                <li>Clear clinical recommendations</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Most Improved</h3>
+                            <p class="text-sm text-gray-700">MedGemma:27B showed significant improvement over its 4B version with:</p>
+                            <ul class="mt-1 ml-4 list-disc text-sm text-gray-600">
+                                <li>Better structured reports</li>
+                                <li>More accurate statistics</li>
+                                <li>Fewer hallucinations</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Critical Issues -->
+                <div class="flex-1 bg-red-50 p-4 rounded-lg border border-red-200">
+                    <h2 class="text-xl font-bold text-red-800 mb-3">Critical Clinical Errors</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Calculation Errors</h3>
+                            <p class="text-sm text-gray-700">3/5 models made UF calculation mistakes that could impact treatment:</p>
+                            <ul class="mt-1 ml-4 list-disc text-sm text-gray-600">
+                                <li>Incorrect daily totals (MedGemma:4B)</li>
+                                <li>Wrong anomaly thresholds (MedLLama:7B)</li>
+                                <li>Unit conversion errors (LLAMA 3.3)</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Anomaly Detection</h3>
+                            <p class="text-sm text-gray-700">Common missed clinical flags:</p>
+                            <ul class="mt-1 ml-4 list-disc text-sm text-gray-600">
+                                <li>Weight changes >0.5kg (4/5 missed some)</li>
+                                <li>Hypertension events (3/5 incomplete)</li>
+                                <li>UF volume outliers (2/5 missed)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Takeaways -->
+            <div class="mt-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800 mb-3">Key Clinical Takeaways</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="font-semibold text-gray-800">✅ Strengths</h3>
+                        <ul class="mt-1 ml-4 list-disc text-sm text-gray-700">
+                            <li>Gemma models showed best adherence to clinical guidelines</li>
+                            <li>Larger models generally performed better (27B > 12B > 7B)</li>
+                            <li>Medical-specific models outperformed general ones</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">⚠️ Weaknesses</h3>
+                        <ul class="mt-1 ml-4 list-disc text-sm text-gray-700">
+                            <li>Basic math errors in fluid calculations</li>
+                            <li>Inconsistent application of clinical thresholds</li>
+                            <li>Tendency to under-report anomalies</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-4 bg-yellow-50 p-3 rounded border border-yellow-200">
+                    <h3 class="font-semibold text-yellow-800">Clinical Recommendation</h3>
+                    <p class="text-sm text-gray-700 mt-1">While some models show promise for clinical data analysis, all outputs should be:</p>
+                    <ol class="mt-1 ml-4 list-decimal text-sm text-gray-700">
+                        <li>Verified by a nephrologist for UF calculations</li>
+                        <li>Cross-checked for complete anomaly detection</li>
+                        <li>Validated against original patient data</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        <!-- End Summary Section -->
+
         <div class="bg-white rounded-xl shadow-lg overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -712,7 +800,7 @@ You will receive a JSON object that includes:
 *   *Daily drain volumes (mL per exchange, array per day)*
 *   *Pre-drain weight (kg) per day*
 *   *Blood pressure readings (systolic/diastolic in mmHg) per day*
-*   (Optional) Other fields like &quot;bag volume&quot; or &quot;dialysate concentration&quot;
+*   (Optional) Other fields like 'bag volume' or 'dialysate concentration'
 
 ### Your tasks:
 1.  *Calculate the Daily UF*:
@@ -876,6 +964,136 @@ New Threshold = Mean + 1 SD = 0.84 + 0.05 = 0.89 L
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-600 align-top">
                                 <div class="cell-preview">1. UF Value and Anomaly Threshold Misinterpretation You list 23 May 2025 UF = 0.90 L and flag it as above anomaly threshold...</div>
+                            </td>
+                        </tr>
+
+                        <!-- Gemma 3 :27B (Alternate Prompt) Row -->
+                        <tr class="hover:bg-gray-50 cursor-pointer transition-colors duration-150" 
+                            data-model="Gemma 3 :27B" 
+                            data-prompt="You are a clinical report assistant. Your task is to generate a **professional and readable Peritoneal Dialysis Monitoring Report** in **Markdown format** using the JSON patient data provided.
+========================
+📌 GENERAL INSTRUCTIONS
+========================
+- The output should **look like a real clinical monitoring report**, intended for nephrologists and dialysis nurses.
+- Use **section headers and emojis** to organize content clearly: 👤, 📈, 🧪, 🩺.
+- Avoid hallucination. Use only the data from the JSON input.
+- Keep all language **objective and clinically appropriate**, not overly casual or verbose.
+===========================
+📋 REPORT STRUCTURE DETAILS
+===========================
+1. **📅 Report Title**
+   - Start with the title: `# 📅 Peritoneal Dialysis Monitoring Report`
+   - Insert a horizontal line using `---` below the title.
+2. **👤 Patient Information Section**
+   - Extract the following fields directly from the JSON:
+     - Patient ID
+     - Gender
+     - Age
+     - Race
+     - Religion
+     - Dialysis Type
+     - Solution Provider
+     - Bag Concentration (if all same, list once)
+     - Total Daily Volume (e.g., 5.5 Litres)
+     - EPO Injection
+     - Distance from Hospital
+3. **📈 Monitoring Period Summary Table**
+   - Create a Markdown table with columns:
+     - Date  
+     - Total UF (L)  
+     - Pre-drain Weight (kg)  
+     - Systolic/Diastolic (mmHg)  
+     - Dialysate Condition
+   💧 **UF Calculation Instructions:**
+   - For each date:
+     1. Sum the `&quot;Volume_ml&quot;` values of the 3 bags.
+     2. Convert total volume to liters: divide by 1000.
+     3. Round to **2 decimal places**.
+     4. Example: 300 + 300 + 300 = 900 mL → 0.90 L.
+   💡 **Dialysate Condition Rule**:  
+   - If all 3 bags on a date have `&quot;Condition&quot;: &quot;Clear&quot;`, show `&quot;All Clear&quot;`.
+4. **🧪 Observations Section**
+   - Write 3–4 concise bullet points commenting on:
+     - **UF trend** (e.g., consistent, increasing, etc.)
+     - **Weight** (e.g., stable, fluctuating)
+     - **Blood pressure**, flag if systolic >140 mmHg
+     - **Dialysate clarity** (e.g., no infection signs)
+5. **🩺 Clinical Recommendations Section**
+   - Write 3–5 actionable bullet points such as:
+     - Continue current dialysis schedule if stable
+     - BP monitoring or antihypertensive adjustment
+     - Weight/diet/fluid guidance
+     - Infection prevention education
+     - Encourage regular follow-ups"
+                            data-output="# 📅 Peritoneal Dialysis Monitoring Report
+---
+
+👤 Patient Information  
+Patient ID: 85h49272ha  
+Gender: Male  
+Age: 23  
+Race: Malay  
+Religion: Islam  
+Dialysis Type: Peritoneal Dialysis  
+Solution Provider: Baxter  
+Bag Concentration: 1.5%  
+Total Daily Volume: 5.5 Litres  
+EPO Injection: Procrit (3x per month)  
+Distance from Hospital: 12.3KM  
+
+📈 Monitoring Period Summary  
+
+| Date        | Total UF (L) | Pre-drain Weight (kg) | Systolic/Diastolic (mmHg) | Dialysate Condition |
+|-------------|--------------|-----------------------|---------------------------|---------------------|
+| 23 May 2025 | 0.90         | 70.0                  | 135/75                    | All Clear           |
+| 22 May 2025 | 0.85         | 69.5                  | 142/80                    | All Clear           |
+| 21 May 2025 | 0.87         | 70.2                  | 138/77                    | All Clear           |
+| 20 May 2025 | 0.87         | 69.8                  | 135/81                    | All Clear           |
+| 19 May 2025 | 0.84         | 70.2                  | 147/80                    | All Clear           |
+| 18 May 2025 | 0.75         | 69.5                  | 130/78                    | All Clear           |
+| 17 May 2025 | 0.80         | 70.2                  | 130/75                    | All Clear           |
+
+🧪 Observations  
+- Ultrafiltration volumes show stable daily removal (0.75-0.90L)  
+- Weight fluctuates within 0.7kg range (69.5-70.2kg)  
+- Elevated BP noted on 19 May (147/80) and 22 May (142/80)  
+- Dialysate remains consistently clear with no signs of infection  
+
+🩺 Clinical Recommendations  
+- Continue current dialysis prescription with 1.5% solution  
+- Monitor blood pressure closely - consider antihypertensive review  
+- Educate on importance of daily weight monitoring  
+- Reinforce infection prevention measures  
+- Schedule follow-up in 1 week to reassess UF and BP trends"
+                            data-issue="✅ Excellent Aspects:
+1. Clear, well-structured report with appropriate emoji headers
+2. Accurate UF calculations for all dates
+3. Complete patient information extraction
+4. Proper anomaly flagging for blood pressure
+5. Practical clinical recommendations
+
+🔧 Minor Improvements Needed:
+1. Add brief introductory sentence (e.g., 'This report covers...')
+2. Standardize decimal places in weight (70 vs 70.0)
+3. Clarify UF range should be 0.75-0.90L (not 0.84-0.90L)
+4. Consider adding mean UF calculation
+5. 'Dialysate remains clear' could be more formal: 'Dialysate clarity remains optimal'
+
+💡 Enhancement Opportunities:
+1. Add summary statistics (mean UF, weight change frequency)
+2. Include medication compliance assessment if data available
+3. Consider adding glucose concentration monitoring
+4. Could flag the 0.90L UF as slightly high if comparing to mean
+5. May want to standardize time format in blood pressure data">
+                            <td class="px-6 py-4 text-sm font-semibold text-gray-800 align-top">Gemma 3 :27B</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">You are a clinical report assistant. Your task is to generate a professional and readable Peritoneal Dialysis Monitoring Report...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview"># 📅 Peritoneal Dialysis Monitoring Report 👤 Patient Information Patient ID: 85h49272ha...</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 align-top">
+                                <div class="cell-preview">✅ Excellent Aspects: 1. Clear, well-structured report with appropriate emoji headers 2. Accurate UF calculations...</div>
                             </td>
                         </tr>
                     </tbody>
